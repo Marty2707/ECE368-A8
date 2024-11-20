@@ -5,7 +5,9 @@
 
 // Define constants
 #define INF INT_MAX
+#define MAX_NODES 100000 // Upper bound for nodes
 
+// Graph Structures
 typedef struct {
     int target;      // Target node
     int *weights;    // List of weights
@@ -17,6 +19,7 @@ typedef struct {
     int edge_count;  // Number of edges
 } Vertex;
 
+// Priority Queue
 typedef struct {
     int node;
     int time;
@@ -29,9 +32,11 @@ typedef struct {
     int capacity;
 } PriorityQueue;
 
+// Globals
 Vertex *graph;
 int V, N;
 
+// Priority Queue Functions
 PriorityQueue *create_priority_queue(int capacity) {
     PriorityQueue *pq = malloc(sizeof(PriorityQueue));
     pq->heap = malloc(capacity * sizeof(State));
@@ -41,6 +46,10 @@ PriorityQueue *create_priority_queue(int capacity) {
 }
 
 void push(PriorityQueue *pq, State s) {
+    if (pq->size >= pq->capacity) {
+        fprintf(stderr, "Error: Priority queue full.\n");
+        exit(EXIT_FAILURE);
+    }
     pq->heap[pq->size++] = s;
     int i = pq->size - 1;
     while (i > 0 && pq->heap[i].cost < pq->heap[(i - 1) / 2].cost) {
@@ -52,6 +61,10 @@ void push(PriorityQueue *pq, State s) {
 }
 
 State pop(PriorityQueue *pq) {
+    if (pq->size == 0) {
+        fprintf(stderr, "Error: Priority queue empty.\n");
+        exit(EXIT_FAILURE);
+    }
     State min = pq->heap[0];
     pq->heap[0] = pq->heap[--pq->size];
     int i = 0;
@@ -73,6 +86,7 @@ bool is_empty(PriorityQueue *pq) {
     return pq->size == 0;
 }
 
+// Graph Functions
 void parse_input(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (!file) {
@@ -112,6 +126,7 @@ void parse_input(const char *filename) {
     fclose(file);
 }
 
+// Dijkstra's Algorithm on Time-Expanded Graph
 void modified_dijkstra(int start, int end) {
     int total_nodes = V * N;
     int *dist = malloc(total_nodes * sizeof(int));
@@ -122,7 +137,7 @@ void modified_dijkstra(int start, int end) {
         visited[i] = false;
     }
 
-    PriorityQueue *pq = create_priority_queue(total_nodes);
+    PriorityQueue *pq = create_priority_queue(MAX_NODES);
     dist[start * N] = 0;  // Start at (start, time=0)
     push(pq, (State){start, 0, 0});
 
