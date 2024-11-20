@@ -5,7 +5,7 @@
 
 // Define constants
 #define INF INT_MAX
-#define MAX_NODES 100000 // Upper bound for nodes
+#define MAX_NODES 100000 // Maximum nodes in the time-expanded graph
 
 // Graph Structures
 typedef struct {
@@ -39,7 +39,15 @@ int V, N;
 // Priority Queue Functions
 PriorityQueue *create_priority_queue(int capacity) {
     PriorityQueue *pq = malloc(sizeof(PriorityQueue));
+    if (!pq) {
+        fprintf(stderr, "Error: Memory allocation failed for priority queue.\n");
+        exit(EXIT_FAILURE);
+    }
     pq->heap = malloc(capacity * sizeof(State));
+    if (!pq->heap) {
+        fprintf(stderr, "Error: Memory allocation failed for priority queue heap.\n");
+        exit(EXIT_FAILURE);
+    }
     pq->size = 0;
     pq->capacity = capacity;
     return pq;
@@ -47,7 +55,7 @@ PriorityQueue *create_priority_queue(int capacity) {
 
 void push(PriorityQueue *pq, State s) {
     if (pq->size >= pq->capacity) {
-        fprintf(stderr, "Error: Priority queue full.\n");
+        fprintf(stderr, "Error: Priority queue overflow.\n");
         exit(EXIT_FAILURE);
     }
     pq->heap[pq->size++] = s;
@@ -62,7 +70,7 @@ void push(PriorityQueue *pq, State s) {
 
 State pop(PriorityQueue *pq) {
     if (pq->size == 0) {
-        fprintf(stderr, "Error: Priority queue empty.\n");
+        fprintf(stderr, "Error: Priority queue underflow.\n");
         exit(EXIT_FAILURE);
     }
     State min = pq->heap[0];
@@ -95,11 +103,21 @@ void parse_input(const char *filename) {
     }
 
     if (fscanf(file, "%d %d", &V, &N) != 2) {
-        printf("Error: Invalid input format.\n");
+        fprintf(stderr, "Error: Invalid input format.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (V * N > MAX_NODES) {
+        fprintf(stderr, "Error: Too many nodes for the graph structure. Increase MAX_NODES.\n");
         exit(EXIT_FAILURE);
     }
 
     graph = malloc(V * sizeof(Vertex));
+    if (!graph) {
+        fprintf(stderr, "Error: Memory allocation failed for graph.\n");
+        exit(EXIT_FAILURE);
+    }
+
     for (int i = 0; i < V; i++) {
         graph[i].edges = NULL;
         graph[i].edge_count = 0;
@@ -107,19 +125,38 @@ void parse_input(const char *filename) {
 
     int u, v;
     while (fscanf(file, "%d %d", &u, &v) != EOF) {
+        if (u < 0 || u >= V || v < 0 || v >= V) {
+            fprintf(stderr, "Error: Invalid edge (%d, %d).\n", u, v);
+            exit(EXIT_FAILURE);
+        }
+
         int *weights = malloc(N * sizeof(int));
+        if (!weights) {
+            fprintf(stderr, "Error: Memory allocation failed for edge weights.\n");
+            exit(EXIT_FAILURE);
+        }
+
         for (int i = 0; i < N; i++) {
             if (fscanf(file, "%d", &weights[i]) != 1) {
-                printf("Error: Insufficient weights for edge (%d, %d).\n", u, v);
+                fprintf(stderr, "Error: Insufficient weights for edge (%d, %d).\n", u, v);
                 exit(EXIT_FAILURE);
             }
         }
+
         Edge *edge = malloc(sizeof(Edge));
+        if (!edge) {
+            fprintf(stderr, "Error: Memory allocation failed for edge.\n");
+            exit(EXIT_FAILURE);
+        }
         edge->target = v;
         edge->weights = weights;
         edge->period = N;
 
         graph[u].edges = realloc(graph[u].edges, (graph[u].edge_count + 1) * sizeof(Edge *));
+        if (!graph[u].edges) {
+            fprintf(stderr, "Error: Memory allocation failed for adjacency list.\n");
+            exit(EXIT_FAILURE);
+        }
         graph[u].edges[graph[u].edge_count++] = edge;
     }
 
@@ -131,6 +168,11 @@ void modified_dijkstra(int start, int end) {
     int total_nodes = V * N;
     int *dist = malloc(total_nodes * sizeof(int));
     bool *visited = malloc(total_nodes * sizeof(bool));
+
+    if (!dist || !visited) {
+        fprintf(stderr, "Error: Memory allocation failed for dist/visited arrays.\n");
+        exit(EXIT_FAILURE);
+    }
 
     for (int i = 0; i < total_nodes; i++) {
         dist[i] = INF;
@@ -178,7 +220,7 @@ void modified_dijkstra(int start, int end) {
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
-        printf("Usage: %s <input_file>\n", argv[0]);
+        fprintf(stderr, "Usage: %s <input_file>\n", argv[0]);
         return 1;
     }
 
@@ -186,6 +228,10 @@ int main(int argc, char *argv[]) {
 
     int start, end;
     while (scanf("%d %d", &start, &end) != EOF) {
+        if (start < 0 || start >= V || end < 0 || end >= V) {
+            fprintf(stderr, "Error: Invalid query (%d, %d).\n", start, end);
+            continue;
+        }
         modified_dijkstra(start, end);
     }
 
