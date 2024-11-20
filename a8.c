@@ -90,7 +90,12 @@ void parse_input(const char *filename) {
     }
 
     // Read number of vertices and period
-    fscanf(file, "%d %d", &V, &N);
+    if (fscanf(file, "%d %d", &V, &N) != 2) {
+        printf("Error: Invalid input format.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Allocate memory for the graph
     graph = malloc(V * sizeof(Vertex));
     for (int i = 0; i < V; i++) {
         graph[i].edges = NULL;
@@ -102,7 +107,10 @@ void parse_input(const char *filename) {
     while (fscanf(file, "%d %d", &u, &v) != EOF) {
         int *weights = malloc(N * sizeof(int));
         for (int i = 0; i < N; i++) {
-            fscanf(file, "%d", &weights[i]);
+            if (fscanf(file, "%d", &weights[i]) != 1) {
+                printf("Error: Insufficient weights for edge (%d, %d).\n", u, v);
+                exit(EXIT_FAILURE);
+            }
         }
         Edge *edge = malloc(sizeof(Edge));
         edge->target = v;
@@ -118,7 +126,6 @@ void parse_input(const char *filename) {
 
 // Modified Dijkstra's Algorithm
 void modified_dijkstra(int start, int end) {
-    // Dynamic memory allocation
     int **dist = malloc(V * sizeof(int *));
     bool **visited = malloc(V * sizeof(bool *));
     int *prev = malloc(V * sizeof(int));
@@ -126,10 +133,6 @@ void modified_dijkstra(int start, int end) {
     for (int i = 0; i < V; i++) {
         dist[i] = malloc(N * sizeof(int));
         visited[i] = malloc(N * sizeof(bool));
-    }
-
-    // Initialize distances and visited states
-    for (int i = 0; i < V; i++) {
         for (int j = 0; j < N; j++) {
             dist[i][j] = INF;
             visited[i][j] = false;
@@ -137,9 +140,7 @@ void modified_dijkstra(int start, int end) {
         prev[i] = -1;
     }
 
-    PriorityQueue *pq = create_priority_queue(V * N); // Create priority queue
-
-    // Start with the initial node at step 0
+    PriorityQueue *pq = create_priority_queue(V * N);
     dist[start][0] = 0;
     push(pq, (State){start, 0, 0});
 
@@ -147,28 +148,23 @@ void modified_dijkstra(int start, int end) {
         State current = pop(pq);
         int u = current.node, cost = current.cost, step = current.step;
 
-        // If already visited this state, skip
         if (visited[u][step]) continue;
         visited[u][step] = true;
 
-        // If we've reached the destination, terminate early
         if (u == end) {
             printf("Shortest path cost: %d\n", cost);
-            // Reconstruct and print the path here
             goto cleanup;
         }
 
-        // Relax all neighbors
         for (int i = 0; i < graph[u].edge_count; i++) {
             Edge *edge = graph[u].edges[i];
             int v = edge->target;
             int weight = dynamic_weight(edge, step);
             int next_step = (step + 1) % N;
 
-            // Relax the edge
             if (cost + weight < dist[v][next_step]) {
                 dist[v][next_step] = cost + weight;
-                prev[v] = u; // Track the predecessor for path reconstruction
+                prev[v] = u;
                 push(pq, (State){v, dist[v][next_step], next_step});
             }
         }
@@ -177,7 +173,6 @@ void modified_dijkstra(int start, int end) {
     printf("No path found.\n");
 
 cleanup:
-    // Free memory
     for (int i = 0; i < V; i++) {
         free(dist[i]);
         free(visited[i]);
@@ -195,9 +190,13 @@ int main(int argc, char *argv[]) {
 
     parse_input(argv[1]);
 
+    printf("Enter queries (start end), one per line. Press Ctrl+D to end input:\n");
     int start, end;
-    printf("Enter queries (start end):\n");
     while (scanf("%d %d", &start, &end) != EOF) {
+        if (start < 0 || start >= V || end < 0 || end >= V) {
+            printf("Invalid query: (%d, %d). Nodes must be in range [0, %d).\n", start, end, V);
+            continue;
+        }
         modified_dijkstra(start, end);
     }
 
