@@ -118,10 +118,15 @@ void parse_input(const char *filename) {
 
 // Modified Dijkstra's Algorithm
 void modified_dijkstra(int start, int end) {
-    PriorityQueue *pq = create_priority_queue(V * N); // Create priority queue
-    int dist[V][N]; // Distance matrix for (node, step)
-    bool visited[V][N]; // Visited states (node, step)
-    int prev[V]; // To reconstruct path
+    // Dynamic memory allocation
+    int **dist = malloc(V * sizeof(int *));
+    bool **visited = malloc(V * sizeof(bool *));
+    int *prev = malloc(V * sizeof(int));
+
+    for (int i = 0; i < V; i++) {
+        dist[i] = malloc(N * sizeof(int));
+        visited[i] = malloc(N * sizeof(bool));
+    }
 
     // Initialize distances and visited states
     for (int i = 0; i < V; i++) {
@@ -131,6 +136,8 @@ void modified_dijkstra(int start, int end) {
         }
         prev[i] = -1;
     }
+
+    PriorityQueue *pq = create_priority_queue(V * N); // Create priority queue
 
     // Start with the initial node at step 0
     dist[start][0] = 0;
@@ -148,7 +155,7 @@ void modified_dijkstra(int start, int end) {
         if (u == end) {
             printf("Shortest path cost: %d\n", cost);
             // Reconstruct and print the path here
-            return;
+            goto cleanup;
         }
 
         // Relax all neighbors
@@ -168,6 +175,16 @@ void modified_dijkstra(int start, int end) {
     }
 
     printf("No path found.\n");
+
+cleanup:
+    // Free memory
+    for (int i = 0; i < V; i++) {
+        free(dist[i]);
+        free(visited[i]);
+    }
+    free(dist);
+    free(visited);
+    free(prev);
 }
 
 int main(int argc, char *argv[]) {
