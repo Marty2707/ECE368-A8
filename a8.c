@@ -152,7 +152,7 @@ void modified_dijkstra(int start, int end) {
         visited[u][step] = true;
 
         if (u == end) {
-            printf("Shortest path cost: %d\n", cost);
+            printf("%d\n", cost);  // Output only the cost
             goto cleanup;
         }
 
@@ -170,7 +170,7 @@ void modified_dijkstra(int start, int end) {
         }
     }
 
-    printf("No path found.\n");
+    printf("No path found\n");  // Output "No path found" for unreachable cases
 
 cleanup:
     for (int i = 0; i < V; i++) {
@@ -190,13 +190,8 @@ int main(int argc, char *argv[]) {
 
     parse_input(argv[1]);
 
-    printf("Enter queries (start end), one per line. Press Ctrl+D to end input:\n");
     int start, end;
     while (scanf("%d %d", &start, &end) != EOF) {
-        if (start < 0 || start >= V || end < 0 || end >= V) {
-            printf("Invalid query: (%d, %d). Nodes must be in range [0, %d).\n", start, end, V);
-            continue;
-        }
         modified_dijkstra(start, end);
     }
 
