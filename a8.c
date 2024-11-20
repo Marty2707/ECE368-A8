@@ -6,7 +6,6 @@
 // Define constants
 #define INF INT_MAX
 
-// Data structures for the graph
 typedef struct {
     int target;      // Target node
     int *weights;    // List of weights
@@ -18,14 +17,10 @@ typedef struct {
     int edge_count;  // Number of edges
 } Vertex;
 
-Vertex *graph; // Graph representation
-int V, N;      // Number of vertices and period
-
-// Data structure for priority queue
 typedef struct {
     int node;
+    int time;
     int cost;
-    int step;
 } State;
 
 typedef struct {
@@ -34,12 +29,9 @@ typedef struct {
     int capacity;
 } PriorityQueue;
 
-// Function to calculate the weight dynamically based on the step
-int dynamic_weight(Edge *edge, int step) {
-    return edge->weights[step % edge->period];
-}
+Vertex *graph;
+int V, N;
 
-// Priority Queue Implementation
 PriorityQueue *create_priority_queue(int capacity) {
     PriorityQueue *pq = malloc(sizeof(PriorityQueue));
     pq->heap = malloc(capacity * sizeof(State));
@@ -81,7 +73,6 @@ bool is_empty(PriorityQueue *pq) {
     return pq->size == 0;
 }
 
-// Parse input file
 void parse_input(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (!file) {
@@ -89,20 +80,17 @@ void parse_input(const char *filename) {
         exit(EXIT_FAILURE);
     }
 
-    // Read number of vertices and period
     if (fscanf(file, "%d %d", &V, &N) != 2) {
         printf("Error: Invalid input format.\n");
         exit(EXIT_FAILURE);
     }
 
-    // Allocate memory for the graph
     graph = malloc(V * sizeof(Vertex));
     for (int i = 0; i < V; i++) {
         graph[i].edges = NULL;
         graph[i].edge_count = 0;
     }
 
-    // Read edges
     int u, v;
     while (fscanf(file, "%d %d", &u, &v) != EOF) {
         int *weights = malloc(N * sizeof(int));
@@ -124,62 +112,53 @@ void parse_input(const char *filename) {
     fclose(file);
 }
 
-// Modified Dijkstra's Algorithm
 void modified_dijkstra(int start, int end) {
-    int **dist = malloc(V * sizeof(int *));
-    bool **visited = malloc(V * sizeof(bool *));
-    int *prev = malloc(V * sizeof(int));
+    int total_nodes = V * N;
+    int *dist = malloc(total_nodes * sizeof(int));
+    bool *visited = malloc(total_nodes * sizeof(bool));
 
-    for (int i = 0; i < V; i++) {
-        dist[i] = malloc(N * sizeof(int));
-        visited[i] = malloc(N * sizeof(bool));
-        for (int j = 0; j < N; j++) {
-            dist[i][j] = INF;
-            visited[i][j] = false;
-        }
-        prev[i] = -1;
+    for (int i = 0; i < total_nodes; i++) {
+        dist[i] = INF;
+        visited[i] = false;
     }
 
-    PriorityQueue *pq = create_priority_queue(V * N);
-    dist[start][0] = 0;
+    PriorityQueue *pq = create_priority_queue(total_nodes);
+    dist[start * N] = 0;  // Start at (start, time=0)
     push(pq, (State){start, 0, 0});
 
     while (!is_empty(pq)) {
         State current = pop(pq);
-        int u = current.node, cost = current.cost, step = current.step;
+        int u = current.node, time = current.time, cost = current.cost;
+        int idx = u * N + time;
 
-        if (visited[u][step]) continue;
-        visited[u][step] = true;
+        if (visited[idx]) continue;
+        visited[idx] = true;
 
         if (u == end) {
-            printf("%d\n", cost);  // Output only the cost
-            goto cleanup;
+            printf("%d\n", cost);
+            free(dist);
+            free(visited);
+            return;
         }
 
         for (int i = 0; i < graph[u].edge_count; i++) {
             Edge *edge = graph[u].edges[i];
             int v = edge->target;
-            int weight = dynamic_weight(edge, step);
-            int next_step = (step + 1) % N;
+            int next_time = (time + 1) % N;
+            int weight = edge->weights[time];
+            int next_idx = v * N + next_time;
 
-            if (cost + weight < dist[v][next_step]) {
-                dist[v][next_step] = cost + weight;
-                prev[v] = u;
-                push(pq, (State){v, dist[v][next_step], next_step});
+            if (cost + weight < dist[next_idx]) {
+                dist[next_idx] = cost + weight;
+                push(pq, (State){v, next_time, dist[next_idx]});
             }
         }
     }
 
-    printf("No path found\n");  // Output "No path found" for unreachable cases
+    printf("No path found\n");
 
-cleanup:
-    for (int i = 0; i < V; i++) {
-        free(dist[i]);
-        free(visited[i]);
-    }
     free(dist);
     free(visited);
-    free(prev);
 }
 
 int main(int argc, char *argv[]) {
