@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "/Users/marty/Desktop/ECE368/ECE368-A8",
+      "program": "/Users/marty/Desktop/ECE368/ECE368-A8/build/Debug/outDebug"
+    }
+  ]
+}
